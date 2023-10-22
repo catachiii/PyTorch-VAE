@@ -10,13 +10,8 @@ from .types_ import *
 
 class ConditionalVAE(BaseVAE):
 
-    def __init__(self,
-                 in_channels: int,
-                 num_classes: int,
-                 latent_dim: int,
-                 hidden_dims: List = None,
-                 img_size: int = 64,
-                 **kwargs) -> None:
+    def __init__(self, in_channels: int, num_classes: int, latent_dim: int, hidden_dims: List = None,
+                 img_size: int = 64, **kwargs) -> None:
         super(ConditionalVAE, self).__init__()
 
         self.latent_dim = latent_dim
@@ -32,13 +27,8 @@ class ConditionalVAE(BaseVAE):
         in_channels += 1  # To account for the extra label channel
         # Build Encoder
         for h_dim in hidden_dims:
-            modules.append(
-                nn.Sequential(
-                    nn.Conv2d(in_channels, out_channels=h_dim,
-                              kernel_size=3, stride=2, padding=1),
-                    nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU())
-            )
+            modules.append(nn.Sequential(nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=2, padding=1),
+                nn.BatchNorm2d(h_dim), nn.LeakyReLU()))
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
@@ -53,32 +43,16 @@ class ConditionalVAE(BaseVAE):
         hidden_dims.reverse()
 
         for i in range(len(hidden_dims) - 1):
-            modules.append(
-                nn.Sequential(
-                    nn.ConvTranspose2d(hidden_dims[i],
-                                       hidden_dims[i + 1],
-                                       kernel_size=3,
-                                       stride=2,
-                                       padding=1,
-                                       output_padding=1),
-                    nn.BatchNorm2d(hidden_dims[i + 1]),
-                    nn.LeakyReLU())
-            )
+            modules.append(nn.Sequential(
+                nn.ConvTranspose2d(hidden_dims[i], hidden_dims[i + 1], kernel_size=3, stride=2, padding=1,
+                                   output_padding=1), nn.BatchNorm2d(hidden_dims[i + 1]), nn.LeakyReLU()))
 
         self.decoder = nn.Sequential(*modules)
 
         self.final_layer = nn.Sequential(
-            nn.ConvTranspose2d(hidden_dims[-1],
-                               hidden_dims[-1],
-                               kernel_size=3,
-                               stride=2,
-                               padding=1,
-                               output_padding=1),
-            nn.BatchNorm2d(hidden_dims[-1]),
-            nn.LeakyReLU(),
-            nn.Conv2d(hidden_dims[-1], out_channels=3,
-                      kernel_size=3, padding=1),
-            nn.Tanh())
+            nn.ConvTranspose2d(hidden_dims[-1], hidden_dims[-1], kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.BatchNorm2d(hidden_dims[-1]), nn.LeakyReLU(),
+            nn.Conv2d(hidden_dims[-1], out_channels=3, kernel_size=3, padding=1), nn.Tanh())
 
     def encode(self, input: Tensor) -> List[Tensor]:
         """
@@ -130,9 +104,7 @@ class ConditionalVAE(BaseVAE):
         z = torch.cat([z, y], dim=1)
         return [self.decode(z), input, mu, log_var]
 
-    def loss_function(self,
-                      *args,
-                      **kwargs) -> dict:
+    def loss_function(self, *args, **kwargs) -> dict:
         recons = args[0]
         input = args[1]
         mu = args[2]
@@ -146,10 +118,7 @@ class ConditionalVAE(BaseVAE):
         loss = recons_loss + kld_weight * kld_loss
         return {'loss': loss, 'Reconstruction_Loss': recons_loss, 'KLD': -kld_loss}
 
-    def sample(self,
-               num_samples: int,
-               current_device: int,
-               **kwargs) -> Tensor:
+    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -158,8 +127,7 @@ class ConditionalVAE(BaseVAE):
         :return: (Tensor)
         """
         y = kwargs['labels'].float()
-        z = torch.randn(num_samples,
-                        self.latent_dim)
+        z = torch.randn(num_samples, self.latent_dim)
 
         z = z.to(current_device)
 
